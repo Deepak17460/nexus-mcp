@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Sonatype Nexus Repository OSS
+  nexus:
+    image: sonatype/nexus3:latest
+    container_name: nexus-oss
+    ports:
+      - "8081:8081"
+    environment:
+      # Java heap size
+      INSTALL4J_ADD_VM_PARAMS: "-Xms1200m -Xmx1200m -XX:MaxDirectMemorySize=2g"
+    volumes:
+      - nexus-data:/nexus-data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/service/rest/v1/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - nexus-network
+
+  # Nexus MCP Server
+  nexus-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nexus-mcp-server
+    depends_on:
+      nexus:
+        condition: service_healthy
+    environment:
+      # Nexus connection (use service name as hostname)
+      NEXUS_URL: http://nexus:8081
+      # Authentication (choose one)
+      NEXUS_USERNAME: admin
+      NEXUS_PASSWORD: admin123
+      # Logging
+      LOG_LEVEL: INFO
+      # Security
+      ALLOW_INSECURE: "true"  # Only for local development
+    volumes:
+      # Mount logs directory for inspection
+      - ./logs:/app/logs
+    networks:
+      - nexus-network
+    # Restart policy
+    restart: unless-stopped
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+volumes:
+  nexus-data:
+    driver: local
+
+networks:
+  nexus-network:
+    driver: bridge

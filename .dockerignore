@@ -1,0 +1,77 @@
+# Git
+.git
+.gitignore
+.github
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache
+.coverage
+htmlcov/
+.mypy_cache
+.ruff_cache
+
+# Logs (large files)
+logs/
+*.log
+
+# Environment
+.env
+.env.local
+
+# Documentation
+docs/
+*.md
+
+# Testing
+tests/
+
+# Build artifacts
+*.egg-info/
+build/
+dist/
+
+# Exception: ship the Nexus info knowledge base used by the nexus_info tool
+# (overrides the *.md exclusion above — must stay after it in this file).
+!nexus/
+!nexus/kb/
+!nexus/kb/*.md
+!nexus/README.md

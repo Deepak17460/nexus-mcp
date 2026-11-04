@@ -1,0 +1,42 @@
+%%{init: {'theme':'neutral'}}%%
+flowchart TB
+    subgraph client_side["MCP Client"]
+        cursor["Cursor / Claude Desktop / Claude CLI"]
+    end
+
+    subgraph transports["Transport (MCP_TRANSPORT)"]
+        direction LR
+        stdio["stdio\n(one process per user,\nspawned by the client)"]
+        http["Streamable HTTP\n(one shared process,\nbehind TLS reverse proxy / ALB)"]
+    end
+
+    subgraph mcp_server["nexus_mcp"]
+        server["server.py\nNexusServer\n(declares tools, dispatches calls)"]
+        resolve["_resolve_client()\npicks the right NexusClient\nfor this call"]
+        httpauth["http_auth.py\nparse Authorization: Basic ...\n(hosted mode only)"]
+        tools["tools/*.py\nhealth · repositories · components\nassets · cleanup"]
+        client["nexus_client.py\nasync httpx client\n(Nexus REST calls)"]
+        config["config.py\nenv vars, validation,\nwith_basic_auth() override"]
+        models["models.py\nPydantic input/output models"]
+    end
+
+    nexus["Sonatype Nexus\nREST API"]
+
+    cursor -- "tool call (stdio pipe)" --> stdio
+    cursor -- "tool call + Authorization header (HTTPS)" --> http
+    stdio --> server
+    http --> server
+    server --> resolve
+    resolve -. "hosted HTTP: per-request\nheader -> fresh client" .-> httpauth
+    resolve -- "stdio: reuse the one\nserver-configured client" --> client
+    httpauth --> config
+    resolve --> tools
+    tools --> models
+    tools --> client
+    config -. "env vars / per-request\nBasic-auth override" .-> client
+    client -- "async HTTP(S)" --> nexus
+    nexus -- "JSON" --> client
+    client --> tools
+    tools --> server
+    server -- "JSON result / error" --> stdio
+    server -- "JSON result / error" --> http

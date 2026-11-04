@@ -1,0 +1,128 @@
+stages:
+  - test
+  - package
+  - deploy
+
+test:
+  stage: test
+  before_script:
+    - docker info
+  script:
+    - |
+      docker run --rm \
+        --volume "$CI_PROJECT_DIR:/workspace:ro" \
+        --workdir /workspace \
+        --env PIP_DISABLE_PIP_VERSION_CHECK=1 \
+        --env PIP_NO_CACHE_DIR=1 \
+        python:3.11-slim \
+        sh -c 'python -m pip install ".[dev]" && python -m pytest -p no:cacheprovider'
+
+package-image:
+  stage: package
+  needs:
+    - test
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_TAG'
+  before_script:
+    - docker info
+    # ":?" prints a clear "variable: message" error and exits 1 if unset/empty
+    # -- plain `test -n` fails silently with no explanation of which
+    # variable was missing (see deploy-http-container's history for why
+    # this matters). Set these under Settings -> CI/CD -> Variables.
+    - ': "${NEXUS_DOCKER_REGISTRY:?not set -- add it under Settings > CI/CD > Variables}"'
+    - ': "${NEXUS_DOCKER_IMAGE:?not set -- add it under Settings > CI/CD > Variables}"'
+    - ': "${NEXUS_DOCKER_USERNAME:?not set -- add it under Settings > CI/CD > Variables}"'
+    - ': "${NEXUS_DOCKER_PASSWORD:?not set -- add it under Settings > CI/CD > Variables}"'
+    - printf '%s' "$NEXUS_DOCKER_PASSWORD" | docker login "$NEXUS_DOCKER_REGISTRY" --username "$NEXUS_DOCKER_USERNAME" --password-stdin
+  script:
+    - |
+      image_tag="${NEXUS_DOCKER_IMAGE}:${CI_COMMIT_SHORT_SHA}"
+      docker build --pull --tag "$image_tag" .
+      docker run --rm --entrypoint nexus-mcp "$image_tag" --help
+      docker push "$image_tag"
+
+      if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then
+        docker tag "$image_tag" "${NEXUS_DOCKER_IMAGE}:latest"
+        docker push "${NEXUS_DOCKER_IMAGE}:latest"
+      fi
+
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        docker tag "$image_tag" "${NEXUS_DOCKER_IMAGE}:${CI_COMMIT_TAG}"
+        docker push "${NEXUS_DOCKER_IMAGE}:${CI_COMMIT_TAG}"
+      fi
+
+# Runs on the same shell runner host as package-image (this repo's CI is a
+# shell runner, not a Docker executor, precisely so a stateful step like
+# this can manage a long-lived container on that host). Stop-and-replace:
+# safe to re-run, and every run always ends up on the exact image
+# package-image just built and pushed above -- whatever was running before
+# (this image, an older one, or nothing) is torn down first, so the deployed
+# container never drifts from the newest pipeline run.
+deploy-http-container:
+  stage: deploy
+  needs:
+    - package-image
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_TAG'
+  before_script:
+    - docker info
+    # ":?" prints a clear "variable: message" error and exits 1 if unset/
+    # empty -- plain `test -n` fails with a bare "exit status 1" and no
+    # indication of which variable was missing.
+    - ': "${NEXUS_DOCKER_REGISTRY:?not set -- add it under Settings > CI/CD > Variables}"'
+    - ': "${NEXUS_DOCKER_IMAGE:?not set -- add it under Settings > CI/CD > Variables}"'
+    - ': "${NEXUS_DOCKER_USERNAME:?not set -- add it under Settings > CI/CD > Variables}"'
+    - ': "${NEXUS_DOCKER_PASSWORD:?not set -- add it under Settings > CI/CD > Variables}"'
+    # The hosted server's own Nexus URL -- NOT credentials. MCP_TRANSPORT=http
+    # means this container must never be given NEXUS_USERNAME/PASSWORD/
+    # API_TOKEN: each MCP client request carries its own Nexus identity
+    # instead (see README's "Hosted / Multi-user Deployment" section).
+    - ': "${NEXUS_MCP_NEXUS_URL:?not set -- add it under Settings > CI/CD > Variables (the Nexus URL the hosted server itself connects to)}"'
+    - printf '%s' "$NEXUS_DOCKER_PASSWORD" | docker login "$NEXUS_DOCKER_REGISTRY" --username "$NEXUS_DOCKER_USERNAME" --password-stdin
+  script:
+    - |
+      set -eu
+      container_name="${NEXUS_MCP_CONTAINER_NAME:-nexus-mcp-http}"
+      volume_name="${container_name}-logs"
+      host_port="${NEXUS_MCP_HTTP_PORT:-8000}"
+      # CI_COMMIT_SHORT_SHA, not :latest: package-image only pushes :latest
+      # when this pipeline is on the default branch, but this job's rules
+      # also allow tag pipelines (where CI_COMMIT_BRANCH is unset) -- the
+      # SHA tag is the one package-image always pushes regardless of how
+      # the pipeline was triggered, so it's the only reliable way to name
+      # "the image this pipeline run just built".
+      image_tag="${NEXUS_DOCKER_IMAGE}:${CI_COMMIT_SHORT_SHA}"
+
+      # Pull explicitly rather than trusting a locally cached layer, in case
+      # this job lands on a different cache than package-image did.
+      docker pull "$image_tag"
+
+      # Persist /app/logs across redeploys/restarts (see Dockerfile).
+      docker volume create "$volume_name" >/dev/null
+
+      docker rm -f "$container_name" >/dev/null 2>&1 || true
+
+      docker run -d \
+        --name "$container_name" \
+        --restart unless-stopped \
+        --publish "${host_port}:8000" \
+        --env NEXUS_URL="$NEXUS_MCP_NEXUS_URL" \
+        --env MCP_TRANSPORT=http \
+        --volume "${volume_name}:/app/logs" \
+        "$image_tag"
+
+      # Smoke test: the container must answer its credential-free liveness
+      # probe (/healthz) before this job is allowed to succeed.
+      for _ in $(seq 1 15); do
+        if curl --fail --silent --output /dev/null "http://localhost:${host_port}/healthz"; then
+          echo "nexus-mcp (http) is up on port ${host_port} as container '${container_name}'"
+          exit 0
+        fi
+        sleep 2
+      done
+
+      echo "nexus-mcp (http) did not become healthy in time" >&2
+      docker logs "$container_name" --tail 100 >&2
+      exit 1

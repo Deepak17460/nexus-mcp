@@ -1,0 +1,37 @@
+%%{init: {'theme':'neutral'}}%%
+sequenceDiagram
+    autonumber
+    actor User
+    participant Client as MCP Client (Cursor)
+    participant Server as server.py (NexusServer)
+    participant Auth as http_auth.py
+    participant Cfg as config.py
+    participant Tool as tools/*.py
+    participant HTTP as nexus_client.py
+    participant Nexus as Nexus REST API
+
+    User->>Client: Ask a question ("list my repos")
+    Client->>Server: call_tool("nexus_list_repositories", args)
+
+    alt stdio mode: one process per user
+        Note over Server,Cfg: Server started with NEXUS_URL and<br/>NEXUS_API_TOKEN (or USERNAME+PASSWORD)<br/>as env vars, for this one user only.
+        Server->>Cfg: use server-configured credentials
+    else Streamable HTTP mode: hosted, multi-user
+        Client->>Server: + header Authorization: Basic base64(user:pass)
+        Server->>Auth: parse_basic_auth_header(request)
+        Auth-->>Server: username, password<br/>(or raises if missing/malformed)
+        Server->>Cfg: with_basic_auth(username, password)
+        Note over Server,Cfg: A fresh, request-scoped NexusClient is built<br/>just for this call - never cached, never<br/>reused across requests or users.
+    end
+
+    Server->>Server: validate input via Pydantic model
+    Server->>Tool: dispatch to matching tool handler
+    Tool->>HTTP: e.g. list_repositories()
+    HTTP->>Nexus: GET /service/rest/v1/repositories
+    Nexus-->>HTTP: 200 OK + JSON
+    HTTP-->>Tool: parsed repositories
+    Tool-->>Server: {"status": "success", "data": [...]}
+    Server-->>Client: JSON tool result
+    Client-->>User: renders the answer
+
+    Note over Client,Nexus: If Authorization is missing or invalid in HTTP mode, Auth raises and Server returns a clear {"error": "..."} result - it never falls back to a shared identity.

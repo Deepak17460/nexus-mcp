@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nexus-mcp"
+version = "0.1.0"
+description = "Sonatype Nexus OSS MCP Server"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+# See CONTRIBUTORS.md for maintainers and how to reach them (via GitHub).
+maintainers = [
+    { name = "Deepak Kumar" },
+]
+dependencies = [
+    "mcp==1.30.0",
+    "pydantic>=2.0",
+    "httpx>=0.24.0",
+    "python-dotenv>=1.0.0",
+    "beautifulsoup4>=4.12.0",
+    # Already transitive deps of mcp==1.30.0 -- declared explicitly since
+    # http_app.py/main.py import them directly for the hosted HTTP
+    # transport (MCP_TRANSPORT=http).
+    "starlette>=0.36.0",
+    "uvicorn>=0.27.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21.0",
+    "respx>=0.20.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0",
+]
+
+[project.scripts]
+nexus-mcp = "nexus_mcp.main:main"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
