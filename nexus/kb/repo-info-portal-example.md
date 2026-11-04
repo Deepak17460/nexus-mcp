@@ -1,6 +1,6 @@
 ---
 id: repo-info-portal-example
-title: "Example: Repository Info / Ownership Portal"
+title: Example - Repository Info / Ownership Portal
 url: https://example.com/nexus-repo-info/
 category: portal
 keywords: repo info, repository list, browse repositories, which repo, repo owner, find repository, approver, repo name

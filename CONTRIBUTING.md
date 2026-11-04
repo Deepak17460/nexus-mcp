@@ -37,8 +37,8 @@ workflow:
   failing tool name, and the sanitized error output. Never paste raw
   credentials.
 - **Security issues:** please use GitHub's private
-  ["Report a vulnerability"](../../security/advisories/new) flow instead of
-  a public issue.
+  ["Report a vulnerability"](https://github.com/Deepak17460/nexus-mcp/security/advisories/new)
+  flow instead of a public issue.
 
 ## Becoming a listed contributor
 

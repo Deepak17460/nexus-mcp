@@ -8,6 +8,16 @@ entries below are grouped by theme rather than by release tag.
 
 ## [Unreleased]
 
+- Open-sourced under MIT; replaced internal-origin company references
+  (domains, portal links, employee names/emails in docs and test
+  fixtures) with generic placeholders.
+- Added `.env.example`.
+- Fixed a `nexus/kb/*.md` frontmatter parsing bug where a quoted `title:`
+  value kept its literal quote characters in `nexus_info` output.
+- Fixed `.github/copilot-instructions.md` and `.github/README.md`, which
+  were accidental copies of the Cursor-specific guide.
+- Synced `.claude/CLAUDE.md`'s tool count/list/file structure with the
+  actual 21 registered tools (was stale at 11).
 - Added architecture and request-flow diagrams to `README.md`
   (`docs/architecture.mmd`, `docs/request-flow.mmd`, rendered to PNG via
   `mermaid-cli`).

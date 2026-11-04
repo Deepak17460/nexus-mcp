@@ -237,6 +237,13 @@ the image.
 
 ### GitLab CI/CD image publishing
 
+> **Note:** this project's CI/CD was originally built around GitLab CI and
+> is included as-is (`.gitlab-ci.yml`) — it does **not** run automatically
+> on GitHub. If you host this repo's `main` on GitHub, either mirror it to
+> a GitLab project to use this pipeline, or adapt the steps below into a
+> GitHub Actions workflow (contributions welcome — see
+> [`CONTRIBUTING.md`](CONTRIBUTING.md)).
+
 The included `.gitlab-ci.yml` runs the test suite, builds the Docker image,
 starts a short-lived container to verify the `nexus-mcp` entry point, and
 publishes the image on the default branch and tags. Configure these variables

@@ -1,6 +1,6 @@
 ---
 id: documentation-example
-title: "Example: Internal Documentation / Wiki"
+title: Example - Internal Documentation / Wiki
 url: https://example.com/nexus-docs
 category: documentation
 keywords: documentation, guide, wiki, policy, how to, onboarding docs, best practice, rules

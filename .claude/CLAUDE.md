@@ -33,49 +33,55 @@ ALLOW_INSECURE=true  # Dev only, not for production
 
 ## Key Files
 
-- `nexus_mcp/server.py` — MCP server with all 11 tools registered
+- `nexus_mcp/server.py` — MCP server with all 21 tools registered
 - `nexus_mcp/nexus_client.py` — Async HTTP client to Nexus REST API
 - `nexus_mcp/config.py` — Configuration validation and auth setup
 - `nexus_mcp/models.py` — Pydantic models for type-safe inputs/outputs
+- `nexus_mcp/http_app.py` / `http_auth.py` — Optional hosted Streamable HTTP
+  transport and its per-request Basic-auth parsing (see README's "Hosted /
+  Multi-user Deployment" section) — not used in the default stdio setup
 - `tests/` — Pytest unit tests with respx mocking
 
 ## Available MCP Tools
 
 All tools return JSON with `status`, `data` (on success), or `error` (on failure).
+See the root [README.md](../README.md#available-tools) for the full,
+up-to-date list and description of all 21 tools — summarized by category
+below so this stays a quick reference, not a second source of truth:
 
-### Health & Status
-- **nexus_health_check** — Verify Nexus is running and credentials work
-
-### Repository Management
-- **nexus_list_repositories** — List name, format, type, online status
-- **nexus_get_repository** — Get full config for one repository
-
-### Component Operations
-- **nexus_search_components** — Search with filters (repo, format, group, name, version, keyword)
-- **nexus_get_component** — Get component details by ID
-- **nexus_upload_component** — Upload artifacts (supports Maven, npm, Docker, raw)
-
-### Asset Management
-- **nexus_get_asset** — Retrieve asset metadata by ID
-
-### Cleanup
-- **nexus_list_cleanup_policies** — List available cleanup policies
+- **Health & Status** — `nexus_health_check`, `nexus_check_writable`
+- **Repository Management** — `nexus_list_repositories`, `nexus_get_repository`,
+  `nexus_get_repository_size`
+- **Component Operations** — `nexus_search_components`, `nexus_get_component`,
+  `nexus_get_component_versions`, `nexus_get_latest_release`,
+  `nexus_check_artifact_exists`, `nexus_get_dependency_snippet`,
+  `nexus_upload_component`, `nexus_download_component`
+- **Asset Management** — `nexus_get_asset`, `nexus_get_download_url`,
+  `nexus_download_asset`
+- **Activity** — `nexus_latest_uploaded_artifacts`,
+  `nexus_latest_downloaded_artifacts`, `nexus_get_artifact_age_report`
+- **Help & Links** — `nexus_info`, `nexus_get_repository_owner`
 
 ## Code Structure
 
 ```
 nexus_mcp/
-├── config.py           # Config loading, validation, auth
-├── models.py           # Pydantic input/output models
-├── nexus_client.py     # Async httpx HTTP client
-├── server.py           # MCP server + tool handlers
-├── main.py             # CLI entry point
-└── tools/              # Tool implementations
+├── config.py           # Config loading, validation, auth, with_basic_auth()
+├── models.py            # Pydantic input/output models
+├── nexus_client.py      # Async httpx HTTP client
+├── repo_info_portal.py  # Optional repo-ownership-portal client
+├── server.py             # MCP server + tool handlers
+├── http_app.py           # Hosted Streamable HTTP ASGI app (optional)
+├── http_auth.py          # Per-request Basic-auth header parsing (optional)
+├── make_basic_auth_header.py  # CLI helper for the hosted header value
+├── main.py                # CLI entry point
+└── tools/                 # Tool implementations
     ├── health.py
-    ├── repositories.py
+    ├── repositories.py   # incl. nexus_get_repository_owner
     ├── components.py
     ├── assets.py
-    └── cleanup.py
+    ├── activity.py
+    └── info.py            # Local KB lookup (nexus_info)
 ```
 
 ## Testing

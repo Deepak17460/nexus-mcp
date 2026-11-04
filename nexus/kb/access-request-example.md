@@ -1,6 +1,6 @@
 ---
 id: access-request-example
-title: "Example: Request Nexus Access (replace with your org's link)"
+title: Example - Request Nexus Access (replace with your org's link)
 url: https://example.com/request-nexus-access
 category: servicenow
 keywords: access, permission, role, ci user, request access, raise a ticket, raise ticket, repository creation, transfer admin, repository settings, support, catalog, service request

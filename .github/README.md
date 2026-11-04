@@ -1,6 +1,11 @@
-# Nexus MCP Cursor Resources
+# Nexus MCP GitHub Copilot Resources
 
-This directory contains project-local guidance for safely building and operating this Sonatype Nexus MCP server in Cursor. `CURSOR.md` is the concise project guide; use the skills below for task-specific instructions. Cursor loads skills from `.cursor/skills/` automatically based on the task at hand.
+This directory contains project-local guidance for safely building and
+operating this Sonatype Nexus MCP server with GitHub Copilot.
+`copilot-instructions.md` is the concise project guide — Copilot reads it
+automatically as repository custom instructions. Use the skills below for
+task-specific instructions; they mirror `.codex/skills/` and
+`.cursor/skills/` so guidance stays consistent across assistants.
 
 | Skill | Use when |
 | --- | --- |
@@ -13,16 +18,21 @@ This directory contains project-local guidance for safely building and operating
 
 ## Local Development
 
-```powershell
+```bash
 pip install -e ".[dev]"
 pytest
 ruff check .
 mypy nexus_mcp
 ```
 
-Set `NEXUS_URL` and either `NEXUS_API_TOKEN` or `NEXUS_USERNAME` plus `NEXUS_PASSWORD` only in your local environment or approved secret store. See the repository root [README.md](../README.md) for installation, client integration, and Docker usage.
+Set `NEXUS_URL` and either `NEXUS_API_TOKEN` or `NEXUS_USERNAME` plus
+`NEXUS_PASSWORD` only in your local environment or approved secret store
+(see `.env.example`). See the repository root [README.md](../README.md)
+for installation, client integration, and Docker usage.
 
 ## Relationship to Other Assistant Directories
 
-- `.codex/` — equivalent guide and skills for the Codex CLI. Keep skill content in sync with this directory.
-- `.claude/` — end-user tool-usage guides (health check, search, upload, etc.) for Claude, not development skills.
+- `.codex/`, `.cursor/` — equivalent guides and skills for the Codex CLI
+  and Cursor. Keep skill content in sync with this directory.
+- `.claude/` — end-user tool-usage guides (health check, search, upload,
+  etc.) for Claude, not development skills.

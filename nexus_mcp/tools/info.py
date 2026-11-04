@@ -22,7 +22,7 @@ from nexus_mcp.models import NexusInfoInput
 _FALLBACK_ENTRIES: list[dict[str, Any]] = [
     {
         "id": "access-request-example",
-        "title": "Example: Request Nexus Access (replace with your org's link)",
+        "title": "Example - Request Nexus Access (replace with your org's link)",
         "url": "https://example.com/request-nexus-access",
         "category": "servicenow",
         "keywords": [
@@ -40,7 +40,7 @@ _FALLBACK_ENTRIES: list[dict[str, Any]] = [
     },
     {
         "id": "repo-info-portal-example",
-        "title": "Example: Repository Info / Ownership Portal",
+        "title": "Example - Repository Info / Ownership Portal",
         "url": "https://example.com/nexus-repo-info/",
         "category": "portal",
         "keywords": [
@@ -56,7 +56,7 @@ _FALLBACK_ENTRIES: list[dict[str, Any]] = [
     },
     {
         "id": "documentation-example",
-        "title": "Example: Internal Documentation / Wiki",
+        "title": "Example - Internal Documentation / Wiki",
         "url": "https://example.com/nexus-docs",
         "category": "documentation",
         "keywords": ["documentation", "guide", "wiki", "policy", "how to"],
